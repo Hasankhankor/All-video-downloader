@@ -1,16 +1,9 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  SafeAreaView,
-  FlatList,
-  Dimensions,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, Image, TouchableOpacity, TouchableHighlight, StyleSheet, ScrollView, Clipboard } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native';
+import { FlatList } from 'react-native';
 
 const windowWidth = Dimensions.get('screen');
 
@@ -41,6 +34,10 @@ const AppIconCard = ({ uri }) => (
 );
 
 const MainScreen = () => {
+  const [isHomeHovered, setIsHomeHovered] = useState(false);
+  const [isDownloadHovered, setIsDownloadHovered] = useState(false);
+  const [isYouTubeHovered, setIsYouTubeHovered] = useState(false);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -53,11 +50,11 @@ const MainScreen = () => {
         <Text style={styles.headerTitle}>ALL Video Downloader</Text>
       </View>
       <View style={styles.searchContainer}>
-  <FontAwesome name="link" size={24} color="#999" style={styles.linkIcon} />
-  <TextInput
-    style={styles.searchInput}
-    placeholder="Enter URL here..."
-  />
+        <FontAwesome name="link" size={24} color="#999" style={styles.linkIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Enter URL here..."
+        />
         <TouchableOpacity style={styles.goButton}>
           <Text style={styles.goButtonText}>GO</Text>
         </TouchableOpacity>
@@ -70,11 +67,68 @@ const MainScreen = () => {
         numColumns={4}
         columnWrapperStyle={styles.iconRow}
       />
+      <View style={styles.footer}>
+        {/* Home Link */}
+        <TouchableHighlight
+          style={[styles.footerLink, isHomeHovered ? styles.hoveredFooterLink : null]}
+          onPress={() => {
+            // Handle Home link press
+          }}
+          underlayColor="transparent" // Remove the highlight color
+          onHideUnderlay={() => setIsHomeHovered(false)}
+          onShowUnderlay={() => setIsHomeHovered(true)}
+        >
+          <Text style={styles.footerLinkText}>Home</Text>
+        </TouchableHighlight>
+        {/* Download Link */}
+        <TouchableHighlight
+          style={[styles.footerLink, isDownloadHovered ? styles.hoveredFooterLink : null]}
+          onPress={() => {
+            // Handle Download link press
+          }}
+          underlayColor="transparent" // Remove the highlight color
+          onHideUnderlay={() => setIsDownloadHovered(false)}
+          onShowUnderlay={() => setIsDownloadHovered(true)}
+        >
+          <Text style={styles.footerLinkText}>Download</Text>
+        </TouchableHighlight>
+        {/* YouTube Link */}
+        <TouchableHighlight
+          style={[styles.footerLink, isYouTubeHovered ? styles.hoveredFooterLink : null]}
+          onPress={() => {
+            // Handle YouTube link press
+          }}
+          underlayColor="transparent" // Remove the highlight color
+          onHideUnderlay={() => setIsYouTubeHovered(false)}
+          onShowUnderlay={() => setIsYouTubeHovered(true)}
+        >
+          <Text style={styles.footerLinkText}>YouTube</Text>
+        </TouchableHighlight>
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  footer: {
+    flexDirection: 'row',
+    flexGrow: 1,
+    justifyContent: 'space-around',
+    borderTopWidth: 5,
+    borderTopColor: '#978AFF',
+    paddingVertical: 10,
+    marginTop: '90%',
+  },
+  footerLink: {
+    paddingHorizontal: 40,
+  },
+  hoveredFooterLink: {
+    backgroundColor: '#978AFF', // Background color when hovered
+  },
+  footerLinkText: {
+    fontSize: 16,
+    color: '#333',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
@@ -97,7 +151,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: '#FFFFFF',
     fontSize: 20,
-
     fontWeight: 'bold',
   },
   searchContainer: {
@@ -156,7 +209,6 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 20,
     margin: -5,
-
     elevation: 6,
   },
 });

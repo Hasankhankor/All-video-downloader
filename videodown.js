@@ -1,25 +1,79 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, ScrollView, Clipboard } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Clipboard,
+} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-
-import BottomNavigationBar from './BottomNavigationBar';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
+import axios from 'axios';
 
 const VideoDownloaderScreen = () => {
+  const [downloadedFilePath, setDownloadedFilePath] = useState(null);
+  const [videoImage, setVideoImage] = useState('');
+  const [videoTitle, setVideoTitle] = useState('');
   const [url, setUrl] = useState('');
   const [selectedResolution, setSelectedResolution] = useState('720p');
 
-  const handleStartDownload = () => {
-    alert(`Start download: URL - ${url}, Resolution - ${selectedResolution}`);
-  };
-
-  const handleDownload = () => {
-    alert(`Downloading: URL - ${url}, Resolution - ${selectedResolution}`);
+  const generateUniqueFilename = () => {
+    const timestamp = new Date().getTime();
+    const randomString = Math.random().toString(36).substring(7);
+    return `downloaded-video-${timestamp}-${randomString}.mp4`;
   };
 
   const handlePaste = async () => {
     const content = await Clipboard.getString();
     setUrl(content);
   };
+
+  const downloadFile = async () => {
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+
+      if (status !== 'granted') {
+        throw new Error('Media library permission not granted');
+      }
+
+      const apiUrl = `https://loadify.madrasvalley.com/api/yt/download/video/mp4?url=${url}&video_quality=${selectedResolution}`;
+      const uniqueFilename = generateUniqueFilename();
+      const fileUri = `${FileSystem.documentDirectory}${uniqueFilename}`;
+
+      const { uri } = await FileSystem.downloadAsync(apiUrl, fileUri);
+
+      const asset = await MediaLibrary.createAssetAsync(uri);
+      setDownloadedFilePath(asset.uri);
+      console.log('File downloaded to:', asset.uri);
+
+    } catch (error) {
+      console.error('Error downloading or saving file:', error);
+    }
+  };
+
+  const getVideosDetails = async () => {
+    try {
+      const res = await axios.get(`https://loadify.madrasvalley.com/api/yt/details?url=${url}`);
+      if (res.data.title) {
+        setVideoTitle(res.data.title);
+      }
+      if (res.data.thumbnails && res.data.thumbnails[0] && res.data.thumbnails[0].url) {
+        setVideoImage(res.data.thumbnails[0].url);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    if (url) {
+      getVideosDetails();
+    }
+  }, [url]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -35,21 +89,14 @@ const VideoDownloaderScreen = () => {
           <Text style={[styles.buttonText, { color: '#fff' }]}>Paste</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity style={[styles.button, { backgroundColor: '#978AFF' }]} onPress={handleStartDownload}>
-        <Text style={[styles.buttonText, { color: '#fff' }]}>Start</Text>
-      </TouchableOpacity>
-      <Image
-        style={styles.thumbnail}
-        source={{ uri: 'https://media.npr.org/assets/img/2022/11/16/_dsc0632-imran-khan_edit-78d8939584566e16ab97e43e8254bf8a1ed9645f.jpg' }}
-      />
-      <Text style={styles.videoCaption}>PM Imran Khan embarrasses Pakistan, accused of secretly selling official gifts including a $1m watch</Text>
-      <Text style={styles.videoDuration}>Duration 45:17</Text>
+      <Image style={styles.thumbnail} source={{ uri: videoImage }} />
+      <Text style={styles.videoCaption}>{videoTitle}</Text>
       <View style={styles.pickerContainer}>
         <Text style={styles.pickerLabel}>Select the resolution to download</Text>
         <Picker
           selectedValue={selectedResolution}
           style={styles.picker}
-          onValueChange={(itemValue, itemIndex) => setSelectedResolution(itemValue)}
+          onValueChange={(itemValue) => setSelectedResolution(itemValue)}
         >
           <Picker.Item label="144p" value="144p" />
           <Picker.Item label="240p" value="240p" />
@@ -59,11 +106,12 @@ const VideoDownloaderScreen = () => {
           <Picker.Item label="1080p" value="1080p" />
         </Picker>
       </View>
-      <TouchableOpacity style={[styles.downloadButton, { backgroundColor: '#978AFF' }]} onPress={handleDownload}>
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: '#978AFF' }]}
+        onPress={downloadFile}
+      >
         <Text style={[styles.buttonText, { color: '#fff' }]}>Download</Text>
       </TouchableOpacity>
-      {/* Insert BottomNavigationBar component here */}
-
       <View style={styles.footer}>
         <TouchableOpacity style={styles.footerLink}>
           <Text style={styles.footerLinkText}>Home</Text>
@@ -87,8 +135,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 5,
     borderTopColor: '#978AFF',
     paddingVertical: 10,
-    marginTop:"60%"
-
+    marginTop: '60%',
   },
   footerLink: {
     paddingHorizontal: 40,
@@ -153,11 +200,6 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     textAlign: 'center',
   },
-  videoDuration: {
-    fontSize: 14,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
   pickerContainer: {
     width: '100%',
     marginBottom: 20,
@@ -172,16 +214,9 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   picker: {
-    height: 30,  // Adjust the height as needed
+    height: 30,
     width: '100%',
     borderRadius: 8,
-  },
-
-  downloadButton: {
-    width: '40%',
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
   },
 });
 
